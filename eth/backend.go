@@ -409,6 +409,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			StateScheme:              scheme,
 			TriesInMemory:            config.TriesInMemory,
 			ChainHistoryMode:         config.HistoryMode,
+			ChainHistoryTarget:       config.HistoryPrunePoint,
 			TxLookupLimit:            int64(min(config.TransactionHistory, math.MaxInt64)),
 			AddressCacheSizes:        config.AddressCacheSizes,
 			PreloadRateLimit:         config.PreloadRateLimit,

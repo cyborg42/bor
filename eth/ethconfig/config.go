@@ -126,6 +126,9 @@ type Config struct {
 	// HistoryMode configures chain history retention.
 	HistoryMode history.HistoryMode
 
+	// HistoryPrunePoint is the operator-supplied history cutoff for HistoryMode KeepCustom.
+	HistoryPrunePoint *history.PrunePoint `toml:",omitempty"`
+
 	// This can be set to list of enrtree:// URLs which will be queried for
 	// nodes to connect to.
 	EthDiscoveryURLs  []string
