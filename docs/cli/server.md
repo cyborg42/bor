@@ -68,6 +68,8 @@ The ```bor server``` command runs the Bor client.
 
 - ```grpc.token```: Raw token expected in the `authorization: Bearer <token>` header of incoming gRPC calls (empty disables auth; the `Bearer ` prefix is stripped before comparison). Prefer the BOR_GRPC_TOKEN environment variable over this flag.
 
+- ```history.chain```: Chain history retention: "all", or "<block number>:<block hash>" after pruning older block bodies and receipts with 'bor snapshot prune-history' (startup is refused unless the database tail matches) (default: all)
+
 - ```history.logs```: Number of recent blocks to maintain log search index for (default = about 2 months, 0 = entire chain) (default: 2350000)
 
 - ```history.logs.disable```: Do not maintain log search index (default: false)

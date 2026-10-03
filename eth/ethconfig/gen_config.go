@@ -24,6 +24,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		NetworkId                            uint64
 		SyncMode                             downloader.SyncMode
 		HistoryMode                          history.HistoryMode
+		HistoryPrunePoint                    *history.PrunePoint `toml:",omitempty"`
 		EthDiscoveryURLs                     []string
 		SnapDiscoveryURLs                    []string
 		NoPruning                            bool
@@ -113,6 +114,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.NetworkId = c.NetworkId
 	enc.SyncMode = c.SyncMode
 	enc.HistoryMode = c.HistoryMode
+	enc.HistoryPrunePoint = c.HistoryPrunePoint
 	enc.EthDiscoveryURLs = c.EthDiscoveryURLs
 	enc.SnapDiscoveryURLs = c.SnapDiscoveryURLs
 	enc.NoPruning = c.NoPruning
@@ -206,6 +208,7 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		NetworkId                            *uint64
 		SyncMode                             *downloader.SyncMode
 		HistoryMode                          *history.HistoryMode
+		HistoryPrunePoint                    *history.PrunePoint `toml:",omitempty"`
 		EthDiscoveryURLs                     []string
 		SnapDiscoveryURLs                    []string
 		NoPruning                            *bool
@@ -305,6 +308,9 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	}
 	if dec.HistoryMode != nil {
 		c.HistoryMode = *dec.HistoryMode
+	}
+	if dec.HistoryPrunePoint != nil {
+		c.HistoryPrunePoint = dec.HistoryPrunePoint
 	}
 	if dec.EthDiscoveryURLs != nil {
 		c.EthDiscoveryURLs = dec.EthDiscoveryURLs

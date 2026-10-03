@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/fdlimit"
+	"github.com/ethereum/go-ethereum/core/history"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/eth/downloader/whitelist"
@@ -194,6 +195,10 @@ type HistoryConfig struct {
 	// StateHistory denotes number of recent blocks to retain state history for (only relevant
 	// in state.scheme=path)
 	StateHistory uint64 `hcl:"state,block" toml:"state,block"`
+
+	// Chain is "all", or the "<block number>:<block hash>" the database was pruned to
+	// with 'bor snapshot prune-history'.
+	Chain string `hcl:"chain,optional" toml:"chain,optional"`
 }
 
 type HealthConfig struct {
@@ -1148,6 +1153,7 @@ func DefaultConfig() *Config {
 			LogHistory:         ethconfig.Defaults.LogHistory,
 			LogNoHistory:       ethconfig.Defaults.LogNoHistory,
 			StateHistory:       params.FullImmutabilityThreshold,
+			Chain:              history.KeepAll.String(),
 		},
 		Health: &HealthConfig{
 			MaxGoRoutineThreshold:  0,
@@ -1710,6 +1716,15 @@ func (c *Config) buildEth(stack *node.Node, accountManager *accounts.Manager) (*
 		n.LogHistory = c.History.LogHistory
 		n.LogNoHistory = c.History.LogNoHistory
 		n.StateHistory = c.History.StateHistory
+
+		if c.History.Chain != "" && c.History.Chain != history.KeepAll.String() {
+			point, err := history.ParsePrunePoint(c.History.Chain)
+			if err != nil {
+				return nil, fmt.Errorf("history.chain: %w", err)
+			}
+			n.HistoryMode = history.KeepCustom
+			n.HistoryPrunePoint = point
+		}
 	}
 
 	// LevelDB

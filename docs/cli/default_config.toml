@@ -257,6 +257,7 @@ devfakeauthor = false
   logs = 2350000
   "logs.disable" = false
   state = 90000
+  chain = "all"
 
 [health]
   max_goroutine_threshold = 0

@@ -1426,6 +1426,12 @@ func (c *Command) Flags(config *Config) *flagset.Flagset {
 		Value:   &c.cliConfig.History.StateHistory,
 		Default: c.cliConfig.History.StateHistory,
 	})
+	f.StringFlag(&flagset.StringFlag{
+		Name:    "history.chain",
+		Usage:   `Chain history retention: "all", or "<block number>:<block hash>" after pruning older block bodies and receipts with 'bor snapshot prune-history' (startup is refused unless the database tail matches)`,
+		Value:   &c.cliConfig.History.Chain,
+		Default: c.cliConfig.History.Chain,
+	})
 
 	// Health check related flags
 	f.IntFlag(&flagset.IntFlag{

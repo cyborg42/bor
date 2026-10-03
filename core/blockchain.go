@@ -367,6 +367,10 @@ type BlockChainConfig struct {
 	// Blocks before this number may be unavailable in the chain database.
 	ChainHistoryMode history.HistoryMode
 
+	// ChainHistoryTarget is the operator-supplied pruning point, used only when
+	// ChainHistoryMode is KeepCustom.
+	ChainHistoryTarget *history.PrunePoint
+
 	// Misc options
 	NoPrefetch bool            // Whether to disable heuristic state prefetching when processing blocks
 	Overrides  *ChainOverrides // Optional chain config overrides
@@ -1749,7 +1753,7 @@ func (bc *BlockChain) initializeHistoryPruning(latest uint64) error {
 		// configuration or an error.
 		predefinedPoint := history.PrunePoints[bc.genesisBlock.Hash()]
 		if predefinedPoint == nil || freezerTail != predefinedPoint.BlockNumber {
-			log.Error("Chain history database is pruned with unknown configuration", "tail", freezerTail)
+			log.Error("Chain history database is pruned with unknown configuration", "tail", freezerTail, "hash", bc.GetCanonicalHash(freezerTail))
 			return errors.New("unexpected database tail")
 		}
 		bc.historyPrunePoint.Store(predefinedPoint)
@@ -1776,6 +1780,35 @@ func (bc *BlockChain) initializeHistoryPruning(latest uint64) error {
 		}
 		bc.historyPrunePoint.Store(predefinedPoint)
 		return nil
+
+	case history.KeepCustom:
+		target := bc.cfg.ChainHistoryTarget
+		if target == nil {
+			return fmt.Errorf("history mode %q requires a prune point", bc.cfg.ChainHistoryMode.String())
+		}
+		switch {
+		case freezerTail == target.BlockNumber:
+			// The hashes table is never tail-pruned, so a typo in the configured
+			// hash is caught here instead of serving a mislabelled cutoff.
+			if hash := bc.GetCanonicalHash(freezerTail); hash != target.BlockHash {
+				return fmt.Errorf("database tail %d has hash %s, want %s", freezerTail, hash, target.BlockHash)
+			}
+			bc.historyPrunePoint.Store(target)
+			return nil
+
+		case freezerTail > target.BlockNumber:
+			return fmt.Errorf("database pruned beyond requested history (tail=%d, target=%d)", freezerTail, target.BlockNumber)
+
+		case latest != 0:
+			log.Error(fmt.Sprintf("Chain history is configured as %q, but database is not pruned to it.", target.String()))
+			log.Error(fmt.Sprintf("Run 'bor snapshot prune-history --history.chain %s' to prune history.", target.String()))
+			return errors.New("history pruning required")
+
+		default:
+			// Bor full-syncs from genesis, so a fresh database never starts at the
+			// cutoff; refuse rather than advertise a cutoff over history being written.
+			return errors.New("custom chain history needs an existing database pruned with 'bor snapshot prune-history'")
+		}
 
 	default:
 		return fmt.Errorf("invalid history mode: %d", bc.cfg.ChainHistoryMode)

@@ -207,6 +207,11 @@ func Commands() map[string]MarkDownCommandFactory {
 				Meta: meta,
 			}, nil
 		},
+		"snapshot prune-history": func() (MarkDownCommand, error) {
+			return &PruneHistoryCommand{
+				Meta: meta,
+			}, nil
+		},
 		"purge-whitelisted-entries": func() (MarkDownCommand, error) {
 			return &PurgeWhitelistedEntriesCommand{
 				Meta: meta,

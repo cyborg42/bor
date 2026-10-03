@@ -17,7 +17,10 @@
 package history
 
 import (
+	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
@@ -32,10 +35,14 @@ const (
 
 	// KeepPostMerge sets the history pruning point to the merge activation block.
 	KeepPostMerge
+
+	// KeepCustom sets the history pruning point to a block number and hash supplied
+	// by the operator, in place of one of the built-in points.
+	KeepCustom
 )
 
 func (m HistoryMode) IsValid() bool {
-	return m <= KeepPostMerge
+	return m <= KeepCustom
 }
 
 func (m HistoryMode) String() string {
@@ -44,6 +51,8 @@ func (m HistoryMode) String() string {
 		return "all"
 	case KeepPostMerge:
 		return "postmerge"
+	case KeepCustom:
+		return "custom"
 	default:
 		return fmt.Sprintf("invalid HistoryMode(%d)", m)
 	}
@@ -64,8 +73,10 @@ func (m *HistoryMode) UnmarshalText(text []byte) error {
 		*m = KeepAll
 	case "postmerge":
 		*m = KeepPostMerge
+	case "custom":
+		*m = KeepCustom
 	default:
-		return fmt.Errorf(`unknown sync mode %q, want "all" or "postmerge"`, text)
+		return fmt.Errorf(`unknown sync mode %q, want "all", "postmerge" or "custom"`, text)
 	}
 	return nil
 }
@@ -73,6 +84,43 @@ func (m *HistoryMode) UnmarshalText(text []byte) error {
 type PrunePoint struct {
 	BlockNumber uint64
 	BlockHash   common.Hash
+}
+
+// String formats the prune point in the "number:hash" form that ParsePrunePoint
+// accepts, so a configured point can be echoed back as a command-line argument.
+func (p *PrunePoint) String() string {
+	if p == nil {
+		return ""
+	}
+	return fmt.Sprintf("%d:%s", p.BlockNumber, p.BlockHash.Hex())
+}
+
+// ParsePrunePoint parses a history pruning point given as "<number>:<hash>".
+//
+// Both halves are required. The number alone cannot be trusted as a pruning point
+// because nothing guarantees the canonical chain includes it (a reorged block has
+// a number too); the hash alone says nothing about where to cut. The pair is
+// checked against the canonical chain when pruning runs and on every startup.
+func ParsePrunePoint(input string) (*PrunePoint, error) {
+	number, hash, ok := strings.Cut(input, ":")
+	if !ok {
+		return nil, fmt.Errorf(`invalid prune point %q, want "<block number>:<block hash>"`, input)
+	}
+	block, err := strconv.ParseUint(number, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid block number %q in prune point: %v", number, err)
+	}
+	if block == 0 {
+		return nil, errors.New("prune point must be above the genesis block")
+	}
+	var point common.Hash
+	if err := point.UnmarshalText([]byte(hash)); err != nil {
+		return nil, fmt.Errorf("invalid block hash %q in prune point: %v", hash, err)
+	}
+	if point == (common.Hash{}) {
+		return nil, errors.New("prune point block hash must not be zero")
+	}
+	return &PrunePoint{BlockNumber: block, BlockHash: point}, nil
 }
 
 // PrunePoints the pre-defined history pruning cutoff blocks for known networks.

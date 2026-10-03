@@ -39,6 +39,7 @@ func (c *SnapshotCommand) MarkDown() string {
 		"- [```snapshot prune-state```](./snapshot_prune-state.md): Prune state databases at the given datadir location.",
 		"- [```snapshot prune-block```](./snapshot_prune-block.md): Prune ancient chaindata at the given datadir location.",
 		"- [```snapshot inspect-ancient-db```](./snapshot_inspect-ancient-db.md): Inspect few fields in ancient datastore.",
+		"- [```snapshot prune-history```](./snapshot_prune-history.md): Prune block bodies and receipts below a given block, in place.",
 	}
 
 	return strings.Join(items, "\n\n")
@@ -60,7 +61,11 @@ func (c *SnapshotCommand) Help() string {
 
   Inspect ancient DB pruning related fields:
 
-    $ bor snapshot inspect-ancient-db`
+    $ bor snapshot inspect-ancient-db
+
+  Prune block bodies and receipts below a given block, in place:
+
+    $ bor snapshot prune-history`
 }
 
 // Synopsis implements the cli.Command interface
