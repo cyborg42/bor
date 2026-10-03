@@ -122,7 +122,14 @@ func (c *PruneHistoryCommand) Run(args []string) int {
 		return 1
 	}
 
-	chaindb, err := stack.OpenDatabaseWithFreezer(chaindataPath, c.cache, dbHandles, c.datadirAncient, "", false, true, false, false, false, false)
+	// OpenDatabaseWithFreezer ignores its ancient argument and would open the
+	// key-value store without the freezer; this mirrors how eth.New opens it.
+	chaindb, err := stack.OpenDatabaseWithOptions(chaindataPath, node.DatabaseOptions{
+		Cache:             c.cache,
+		Handles:           dbHandles,
+		AncientsDirectory: c.datadirAncient,
+		DisableFreeze:     true,
+	})
 	if err != nil {
 		c.UI.Error(err.Error())
 		return 1
